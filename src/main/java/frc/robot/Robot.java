@@ -4,8 +4,14 @@
 
 package frc.robot;
 
+import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGReader;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
@@ -16,6 +22,29 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void robotInit() {
+    if (isReal()) {
+      System.out.println("REAL");
+      Logger.getInstance().addDataReceiver(new WPILOGWriter("/U"));
+      Logger.getInstance().addDataReceiver(new NT4Publisher());
+      Constants.currentMode = Constants.Mode.REAL;
+    } else if (isSimulation()) {
+      System.out.println("SIMULATION");
+      Logger.getInstance().addDataReceiver(new WPILOGWriter("C:\\Users\\progr\\OneDrive\\offseason-simulation\\sim.wpilog"));
+      Logger.getInstance().addDataReceiver(new NT4Publisher());
+      Constants.currentMode = Constants.Mode.SIM;
+    } else {
+      System.out.println("REPLAY");
+      setUseTiming(false);
+      String logPath = LogFileUtil.findReplayLog();
+      Logger.getInstance().setReplaySource(new WPILOGReader(logPath));
+      Logger.getInstance().addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_replay")));
+      Constants.currentMode = Constants.Mode.REPLAY;
+    }
+
+    DriverStation.silenceJoystickConnectionWarning(true);
+
+    Logger.getInstance().start();
+
     m_robotContainer = new RobotContainer();
   }
 
